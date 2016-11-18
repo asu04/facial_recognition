@@ -35,13 +35,12 @@ class neuralNet:
         except:
             raise ValueError('DEBUG_MESSAGE_HERE')
 
-    def propagate(self, inputs, current_layer = 0):
+    def propagate(self, inputs, current_layer = 0, forward_one = False):
         output_values = []
         for row in self.layers[current_layer].T:
             output_values.append(neuralNode(row).output(inputs))
-
         output_vector = np.array(output_values)
-        if current_layer == self.n_layers - 1:
+        if current_layer == self.n_layers - 1 or forward_one:
             return output_vector
         else:
             return self.propagate(output_vector, current_layer + 1)
