@@ -17,6 +17,7 @@ matrix_list = [layer1, layer2]
 faceNet = ann.neuralNet(2, matrix_list)
 
 #Backpropagation
+#Testcomment
 
 def backpropagate(training_data, rate, momentum, current_layer):
     final_delta = np.zeros(faceNet.layers[current_layer].shape[1])
