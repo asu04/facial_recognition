@@ -12,11 +12,38 @@ TARGET_VALUES = {'left': np.array([0.9,0.1,0.1,0.1]), 'right': np.array([0.1,0.9
 ORIENTATIONS = set(['left','right','straight','up'])
 PREDICTIONS = {0: 'left', 1: 'right', 2: 'straight', 3: 'up'}
 
-#Backpropagation (might want to implement more generally later)
+#Backpropagation (might want to implement more generally later) (full descent version)
+
+# def backpropagate(training_data, rate, momentum):
+    # total_weight_1 = np.zeros(faceNet.layers[1].weight_matrix.shape)
+    # total_weight_2 = np.zeros(faceNet.layers[0].weight_matrix.shape)
+    # for data in training_data:
+        # target = data[1]
+        # features = data[0]
+        # final_output = faceNet.propagate(features)
+        # error = target - final_output
+        # delta = error*(final_output)*(1-final_output)
+        # # Now backpropgate all the output deltas to find the rest of the deltas
+        # hidden_deltas = faceNet.layers[1].emit_deltas(delta)
+        # # Now compute all necessary weight updates and store back in weight
+        # # matrix
+        # weight_1 = np.tile(faceNet.layers[1].last_input, (faceNet.layers[1].weight_matrix.shape[1],1)).T
+        # weight_2 = np.tile(faceNet.layers[0].last_input, (faceNet.layers[0].weight_matrix.shape[1],1)).T
+        # weight_1 *= (delta * rate)
+        # weight_2 *= (hidden_deltas * rate)
+        # total_weight_1 += weight_1
+        # total_weight_2 += weight_2
+
+    # total_weight_1 += (momentum * faceNet.layers[1].last_weight_update)
+    # total_weight_2 += (momentum * faceNet.layers[0].last_weight_update)
+    # faceNet.layers[0].last_weight_update = np.copy(total_weight_2)
+    # faceNet.layers[1].last_weight_update = np.copy(total_weight_1)
+    # faceNet.layers[0].weight_matrix += total_weight_2
+    # faceNet.layers[1].weight_matrix += total_weight_1
+
+# Stochastic descent version, converges much faster
 
 def backpropagate(training_data, rate, momentum):
-    total_weight_1 = np.zeros(faceNet.layers[1].weight_matrix.shape)
-    total_weight_2 = np.zeros(faceNet.layers[0].weight_matrix.shape)
     for data in training_data:
         target = data[1]
         features = data[0]
@@ -31,15 +58,13 @@ def backpropagate(training_data, rate, momentum):
         weight_2 = np.tile(faceNet.layers[0].last_input, (faceNet.layers[0].weight_matrix.shape[1],1)).T
         weight_1 *= (delta * rate)
         weight_2 *= (hidden_deltas * rate)
-        total_weight_1 += weight_1
-        total_weight_2 += weight_2
+        weight_1 += (momentum * faceNet.layers[1].last_weight_update)
+        weight_2 += (momentum * faceNet.layers[0].last_weight_update)
+        faceNet.layers[0].last_weight_update = np.copy(weight_2)
+        faceNet.layers[1].last_weight_update = np.copy(weight_1)
+        faceNet.layers[0].weight_matrix += weight_2
+        faceNet.layers[1].weight_matrix += weight_1
 
-    total_weight_1 += (momentum * faceNet.layers[1].last_weight_update)
-    total_weight_2 += (momentum * faceNet.layers[0].last_weight_update)
-    faceNet.layers[0].last_weight_update = np.copy(total_weight_2)
-    faceNet.layers[1].last_weight_update = np.copy(total_weight_1)
-    faceNet.layers[0].weight_matrix += total_weight_2
-    faceNet.layers[1].weight_matrix += total_weight_1
 
 #Initialize weight matrices with small random weights by layer
 
@@ -78,7 +103,7 @@ training_data = []
 for filename in training:
     features = imread(DATA_PATH + filename).flatten()/255.0
     target = TARGET_VALUES[filename.split("_")[1]]
-    training_data.append((features, target))
+    training_data.append((features, target, filename))
 
 # def backpropagate(training_data, rate, momentum, current_layer):
     # final_delta = np.zeros(faceNet.layers[current_layer].shape[1])
