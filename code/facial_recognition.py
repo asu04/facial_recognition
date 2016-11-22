@@ -3,10 +3,11 @@ import neural_network as ann
 from scipy.misc import imread
 from os import listdir
 import random
+import pdb
 
 DATA_PATH = "/home/asu/Projects/facial_recognition/data/quarter_size/"
-RANDOM_HIGH = 0.5
-RANDOM_LOW = -0.5
+RANDOM_HIGH = 0.05
+RANDOM_LOW = -0.05
 TARGET_VALUES = {'left': np.array([0.9,0.1,0.1,0.1]), 'right': np.array([0.1,0.9,0.1,0.1]), 'straight': np.array([0.1,0.1,0.9,0.1]), 'up': np.array([0.1,0.1,0.1,0.9])}
 ORIENTATIONS = set(['left','right','straight','up'])
 PREDICTIONS = {0: 'left', 1: 'right', 2: 'straight', 3: 'up'}
@@ -91,26 +92,31 @@ for filename in training:
     # for i in range(faceNet.layers[current_layer].shape[0]):
         # faceNet.layers[current_layer].T[i] += rate * hidden_output * final_delta
 
-candidate_networks = []
+def primary():
 
-for i in range(500):
-    backpropagate(training_data, 0.3, 0.3)
-    if (i+1)%50 == 0:
-        weight_matrix_0 = np.copy(faceNet.layers[0].weight_matrix)
-        weight_matrix_1 = np.copy(faceNet.layers[1].weight_matrix)
-        candidate_networks.append([weight_matrix_0, weight_matrix_1])
+    candidate_networks = []
 
-for network in candidate_networks:
-    correct = 0
-    test_network = ann.neuralNet(2, [ann.neuralLayer(network[0]), ann.neuralLayer(network[1], thresholded=True)])
-    for filename in validation:
-        features = imread(DATA_PATH + filename).flatten()/255.0
-        target = filename.split("_")[1]
-        output = test_network.propagate(features)
-        prediction = PREDICTIONS[np.argmax(output)]
-        if prediction == target:
-            correct += 1
-    network.append(correct)
+    for i in range(1000):
+        # pdb.set_trace()
+        backpropagate(training_data, 0.3, 0.3)
+        if (i+1)%50 == 0:
+            weight_matrix_0 = np.copy(faceNet.layers[0].weight_matrix)
+            weight_matrix_1 = np.copy(faceNet.layers[1].weight_matrix)
+            candidate_networks.append([weight_matrix_0, weight_matrix_1])
+
+    for network in candidate_networks:
+        correct = 0
+        test_network = ann.neuralNet(2, [ann.neuralLayer(network[0]), ann.neuralLayer(network[1], thresholded=True)])
+        for filename in validation:
+            features = imread(DATA_PATH + filename).flatten()/255.0
+            target = filename.split("_")[1]
+            output = test_network.propagate(features)
+            prediction = PREDICTIONS[np.argmax(output)]
+            if prediction == target:
+                correct += 1
+        network.append(correct)
+
+    return candidate_networks
 
 
 

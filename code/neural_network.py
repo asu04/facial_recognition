@@ -44,7 +44,10 @@ class neuralLayer:
         deltas = np.multiply(self.weight_matrix, next_deltas)
         if self.thresholded:
             deltas = np.delete(deltas,0,0)
-        return deltas.sum(axis = 1)
+            last_layer_output = np.delete(self.last_input, 0)
+        else:
+            last_layer_output = self.last_input
+        return (last_layer_output)*(1-last_layer_output)*(deltas.sum(axis = 1))
 
 class neuralNet:
     """Base class for neural net"""
