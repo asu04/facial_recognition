@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import random
+import pdb
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -67,10 +68,32 @@ class neuralNet:
         for layer in self.layers:
             inputs = layer.output(inputs)
         return inputs
-#         for row in self.layers[current_layer].T:
-            # output_values.append(neuralNode(row).output(inputs))
-        # output_vector = np.array(output_values)
-        # if current_layer == self.n_layers - 1 or forward_one:
-            # return output_vector
-        # else:
-#             return self.propagate(output_vector, current_layer + 1)
+
+    def gradient_descent(self, training_data, rate, momentum):
+        weight_updates = []
+        deltas = []
+        for i in range(self.n_layers):
+            total_weight = np.zeros(self.layers[i].weight_matrix.shape)
+            weight_updates.append(total_weight)
+        for data in training_data:
+            target = data[1]
+            features = data[0]
+            final_output = self.propagate(features)
+            error = target - final_output
+            output_deltas = error*(final_output)*(1-final_output)
+            last_deltas = np.copy(output_deltas)
+            deltas.append(last_deltas)
+            for i in reversed(range(1,self.n_layers)):
+               next_deltas = self.layers[i].emit_deltas(last_deltas)
+               deltas.append(next_deltas)
+               last_deltas = next_deltas
+            deltas.reverse()
+            for i in range(self.n_layers):
+                temp_weight = np.tile(self.layers[i].last_input, (self.layers[i].weight_matrix.shape[1],1)).T
+                temp_weight *= (deltas[i] * rate)
+                weight_updates[i] += temp_weight
+
+        for i in range(self.n_layers):
+            weight_updates[i] += (momentum * self.layers[i].last_weight_update)
+            self.layers[i].last_weight_update = np.copy(weight_updates[i])
+            self.layers[i].weight_matrix += weight_updates[i]
