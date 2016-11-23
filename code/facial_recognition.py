@@ -3,7 +3,6 @@ import neural_network as ann
 from scipy.misc import imread
 from os import listdir
 import random
-import pdb
 
 DATA_PATH = "/home/asu/Projects/facial_recognition/data/quarter_size/"
 RANDOM_HIGH = 0.05
@@ -57,7 +56,7 @@ def validation_score(validation_set, neural_net):
     for filename in validation_set:
         features = imread(DATA_PATH + filename).flatten()/255.0
         target = filename.split("_")[1]
-        output = test_network.propagate(features)
+        output = neural_net.propagate(features)
         prediction = PREDICTIONS[np.argmax(output)]
         if prediction == target:
             correct += 1
