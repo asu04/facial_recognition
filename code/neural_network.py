@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import random
-import pdb
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -65,11 +64,13 @@ class neuralNet:
             raise ValueError('DEBUG_MESSAGE_HERE')
 
     def propagate(self, inputs):
+        """Feedforward"""
         for layer in self.layers:
             inputs = layer.output(inputs)
         return inputs
 
     def gradient_descent(self, training_data, rate, momentum):
+        """Full gradient descent"""
         weight_updates = []
         deltas = []
         for i in range(self.n_layers):
@@ -97,3 +98,31 @@ class neuralNet:
             weight_updates[i] += (momentum * self.layers[i].last_weight_update)
             self.layers[i].last_weight_update = np.copy(weight_updates[i])
             self.layers[i].weight_matrix += weight_updates[i]
+
+    def stochastic_descent(self, training_data, rate, momentum):
+        """Stochastic gradient descent"""
+        for data in training_data:
+            deltas = []
+            target = data[1]
+            features = data[0]
+            final_output = self.propagate(features)
+            error = target - final_output
+            output_deltas = error*(final_output)*(1-final_output)
+            last_deltas = np.copy(output_deltas)
+            deltas.append(last_deltas)
+            # Now backpropgate all the output deltas to find the rest of the deltas
+            for i in reversed(range(1,self.n_layers)):
+                next_deltas = self.layers[i].emit_deltas(last_deltas)
+                deltas.append(next_deltas)
+                last_deltas = next_deltas
+            deltas.reverse()
+            # Now compute all necessary weight updates and store back in weight
+            # matrix
+            for i in range(self.n_layers):
+                temp_weight = np.tile(self.layers[i].last_input, (self.layers[i].weight_matrix.shape[1],1)).T
+                temp_weight *= (deltas[i] * rate)
+                self.layers[i].weight_matrix += temp_weight + (momentum * self.layers[i].last_weight_update)
+                self.layers[i].last_weight_update = np.copy(temp_weight)
+
+
+
