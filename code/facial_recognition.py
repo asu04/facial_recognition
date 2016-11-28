@@ -4,6 +4,8 @@ from scipy.misc import imread
 from os import listdir
 import random
 
+# Some constants
+
 DATA_PATH = "/home/asu/Projects/facial_recognition/data/quarter_size/"
 RANDOM_HIGH = 0.05
 RANDOM_LOW = -0.05
