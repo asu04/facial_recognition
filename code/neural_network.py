@@ -1,12 +1,10 @@
 import math
 import numpy as np
 import random
-from multiprocessing import Queue,cpu_count, Pool
-import pdb
+from multiprocess import Pool, Queue, cpu_count
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
-
 
 class neuralNode:
     """Base class for node in neural network"""
@@ -55,7 +53,6 @@ class neuralLayer:
 
 class neuralNet:
     """Base class for neural net"""
-
     def __init__(self, n_layers, layer_list):
         if not len(layer_list) == n_layers:
             raise ValueError('Number of layers and number of matrices supplied do not match')
@@ -110,21 +107,29 @@ class neuralNet:
             self.layers[i].last_weight_update = np.copy(weight_updates[i])
             self.layers[i].weight_matrix += weight_updates[i]
 
-    def mp_gradient_descent(self, training_data, rate, momentum, num_cpus = cpu_count()):
-        """Parallel gradient descent"""
+    def mp_gradient_descent(self, training_data, rate, momentum, num_cpus = cpu_count()-1):
+        """Embarassingly parallel gradient descent"""
         weight_updates = []
         for i in range(self.n_layers):
             total_weight = np.zeros(self.layers[i].weight_matrix.shape)
             weight_updates.append(total_weight)
 
-        pool = Pool(processes = num_cpus)
+        pool = Pool(num_cpus)
 
-        def temp_compute(data):
-            compute_weight_update(data, rate)
+        def addToWeights(x):
+            for i in range(self.n_layers):
+                weight_updates[i] += x[i]
 
-        results = pool.map_async(temp_compute, training_data)
+        for data in training_data:
+            results = pool.apply_async(lambda x: self.compute_weight_update(x,rate), (data,),  callback = addToWeights  )
 
-        print results.get()
+        pool.close()
+        pool.join()
+
+        for i in range(self.n_layers):
+            weight_updates[i] += (momentum * self.layers[i].last_weight_update)
+            self.layers[i].last_weight_update = np.copy(weight_updates[i])
+            self.layers[i].weight_matrix += weight_updates[i]
 
     def stochastic_descent(self, training_data, rate, momentum):
         """Stochastic gradient descent"""
