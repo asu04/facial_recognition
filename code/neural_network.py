@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import random
-from multiprocess import Pool, Queue, cpu_count
+from multiprocess import Pool, cpu_count
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -109,22 +109,44 @@ class neuralNet:
 
     def mp_gradient_descent(self, training_data, rate, momentum, num_cpus = cpu_count()-1):
         """Embarassingly parallel gradient descent"""
+        n_obs = len(training_data)
         weight_updates = []
+        batch_updates = []
+        pool = Pool(num_cpus)
         for i in range(self.n_layers):
             total_weight = np.zeros(self.layers[i].weight_matrix.shape)
             weight_updates.append(total_weight)
 
-        pool = Pool(num_cpus)
+        zeros = np.copy(weight_updates)
+
+        def batch_descent(training_data):
+            result = np.copy(zeros)
+            for data in training_data:
+                temp_update = self.compute_weight_update(data, rate)
+                for i in range(self.n_layers):
+                    result[i] += temp_update[i]
+            return result
+
 
         def addToWeights(x):
-            for i in range(self.n_layers):
-                weight_updates[i] += x[i]
+        #     for i in range(self.n_layers):
+        #         weight_updates[i] += x[i]
+            batch_updates.append(x)
 
-        for data in training_data:
-            results = pool.apply_async(lambda x: self.compute_weight_update(x,rate), (data,),  callback = addToWeights  )
+        # Split data up into k sublists, where k = num_cpus
+
+        k = int(math.ceil(n_obs/float(num_cpus)))
+        sublist = [training_data[x:x+k] for x in xrange(0, n_obs, k)]
+
+        for batch in sublist:
+            result = pool.apply_async(batch_descent, (batch,),  callback = addToWeights)
 
         pool.close()
         pool.join()
+
+        for update in batch_updates:
+            for i in range(self.n_layers):
+                weight_updates[i] += update[i]
 
         for i in range(self.n_layers):
             weight_updates[i] += (momentum * self.layers[i].last_weight_update)
