@@ -1,6 +1,5 @@
 import math
 import numpy as np
-import random
 from multiprocess import Pool, cpu_count
 
 def sigmoid(x):
@@ -139,7 +138,7 @@ class neuralNet:
         sublist = [training_data[x:x+k] for x in xrange(0, n_obs, k)]
 
         for batch in sublist:
-            result = pool.apply_async(batch_descent, (batch,),  callback = addToWeights)
+            pool.apply_async(batch_descent, (batch,),  callback = addToWeights)
 
         pool.close()
         pool.join()
